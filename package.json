@@ -1,0 +1,14 @@
+{
+  "name": "traktion",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:mobile": "npm run start --workspace=apps/mobile",
+    "dev:website": "npm run dev --workspace=apps/website",
+    "build:shared-types": "npm run build --workspace=packages/shared-types"
+  }
+}

@@ -1,0 +1,145 @@
+// Traktion — Phase 0 schema.
+// Entities and relations are a first-pass design based on the feature set in
+// project-plan.md; expect fields/relations to evolve once features are built.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workoutPlans    WorkoutPlan[]
+  workoutSessions WorkoutSession[]
+  personalRecords PersonalRecord[]
+  foodEntries     FoodEntry[]
+  customExercises Exercise[]       @relation("ExerciseCreatedBy")
+}
+
+model Exercise {
+  id          String   @id @default(uuid())
+  name        String
+  muscleGroup String
+  equipment   String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  createdBy    User?          @relation("ExerciseCreatedBy", fields: [createdById], references: [id])
+  planExercise PlanExercise[]
+  setLogs      SetLog[]
+  personalRecords PersonalRecord[]
+
+  @@index([muscleGroup])
+}
+
+model WorkoutPlan {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id])
+  planExercises   PlanExercise[]
+  workoutSessions WorkoutSession[]
+
+  @@index([userId])
+}
+
+model PlanExercise {
+  id            String  @id @default(uuid())
+  workoutPlanId String
+  exerciseId    String
+  order         Int
+  targetSets    Int?
+  targetReps    Int?
+  restSeconds   Int?
+
+  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise    Exercise    @relation(fields: [exerciseId], references: [id])
+
+  @@index([workoutPlanId])
+  @@index([exerciseId])
+}
+
+model WorkoutSession {
+  id            String    @id @default(uuid())
+  userId        String
+  workoutPlanId String?
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  notes         String?
+
+  user        User         @relation(fields: [userId], references: [id])
+  workoutPlan WorkoutPlan? @relation(fields: [workoutPlanId], references: [id])
+  setLogs     SetLog[]
+
+  @@index([userId])
+  @@index([workoutPlanId])
+}
+
+model SetLog {
+  id               String   @id @default(uuid())
+  workoutSessionId String
+  exerciseId       String
+  setNumber        Int
+  reps             Int
+  weightKg         Float
+  rpe              Float?
+  completedAt      DateTime @default(now())
+
+  workoutSession WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  exercise       Exercise       @relation(fields: [exerciseId], references: [id])
+
+  @@index([workoutSessionId])
+  @@index([exerciseId])
+}
+
+model PersonalRecord {
+  id                String   @id @default(uuid())
+  userId            String
+  exerciseId        String
+  weightKg          Float
+  reps              Int
+  estimatedOneRepMax Float?
+  achievedAt        DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([userId, exerciseId])
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model FoodEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  calories  Int
+  protein   Float
+  carbs     Float
+  fat       Float
+  mealType  MealType
+  loggedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, loggedAt])
+}
