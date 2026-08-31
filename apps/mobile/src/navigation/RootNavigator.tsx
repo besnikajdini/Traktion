@@ -1,14 +1,13 @@
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { HomeScreen } from '../screens/HomeScreen';
-import { WorkoutsScreen } from '../screens/WorkoutsScreen';
-import { ProgressScreen } from '../screens/ProgressScreen';
-import { FoodLogScreen } from '../screens/FoodLogScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { LoginScreen } from '../screens/LoginScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
+import { MainTabNavigator } from './MainTabNavigator';
+import { useAuthStore } from '../store/authStore';
 import { colors } from '../theme/colors';
-import type { RootTabParamList } from './types';
+import type { RootStackParamList } from './types';
 
-const Tab = createBottomTabNavigator<RootTabParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const navigationTheme = {
   ...DarkTheme,
@@ -23,15 +22,20 @@ const navigationTheme = {
 };
 
 export function RootNavigator() {
+  const user = useAuthStore((s) => s.user);
+
   return (
     <NavigationContainer theme={navigationTheme}>
-      <Tab.Navigator screenOptions={{ headerShown: false }}>
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Workouts" component={WorkoutsScreen} />
-        <Tab.Screen name="Progress" component={ProgressScreen} />
-        <Tab.Screen name="FoodLog" component={FoodLogScreen} options={{ title: 'Food Log' }} />
-        <Tab.Screen name="Profile" component={ProfileScreen} />
-      </Tab.Navigator>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        )}
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

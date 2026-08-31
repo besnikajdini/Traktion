@@ -31,6 +31,8 @@ model Exercise {
   name        String
   muscleGroup String
   equipment   String?
+  category    String?
+  imageUrl    String?
   createdById String?
   createdAt   DateTime @default(now())
 
@@ -39,6 +41,7 @@ model Exercise {
   setLogs      SetLog[]
   personalRecords PersonalRecord[]
 
+  @@unique([name])
   @@index([muscleGroup])
 }
 

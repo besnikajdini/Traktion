@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
 
 type Props = {
   title: string;
@@ -21,8 +22,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
+    ...typography.screenTitle,
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '600',
   },
 });
