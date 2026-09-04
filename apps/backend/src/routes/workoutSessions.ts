@@ -7,3 +7,4 @@ workoutSessionsRouter.get('/active', workoutSessionsController.getActive);
 workoutSessionsRouter.post('/', workoutSessionsController.start);
 workoutSessionsRouter.get('/:id', workoutSessionsController.getById);
 workoutSessionsRouter.post('/:id/end', workoutSessionsController.end);
+workoutSessionsRouter.get('/:id/personal-records', workoutSessionsController.getPersonalRecords);

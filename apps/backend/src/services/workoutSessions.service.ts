@@ -47,3 +47,11 @@ export async function endSession(userId: string, id: string) {
     include: sessionDetailInclude,
   });
 }
+
+export function getSessionPersonalRecords(userId: string, sessionId: string) {
+  return prisma.personalRecord.findMany({
+    where: { workoutSessionId: sessionId, userId },
+    include: { exercise: { select: { name: true } } },
+    orderBy: { achievedAt: 'asc' },
+  });
+}

@@ -2,8 +2,14 @@ import type { NextFunction, Request, Response } from 'express';
 import * as authService from '../services/auth.service';
 import { AuthError } from '../services/auth.service';
 
-function toUserDto(user: { id: string; email: string; name: string; createdAt: Date }) {
-  return { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt };
+function toUserDto(user: { id: string; email: string; name: string; createdAt: Date; dailyCalorieGoal: number | null }) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    createdAt: user.createdAt,
+    dailyCalorieGoal: user.dailyCalorieGoal,
+  };
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -62,6 +68,21 @@ export async function me(req: Request, res: Response, next: NextFunction) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
+    res.json(toUserDto(user));
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateNutritionGoal(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { dailyCalorieGoal } = req.body as Record<string, unknown>;
+    if (typeof dailyCalorieGoal !== 'number' || !Number.isFinite(dailyCalorieGoal) || dailyCalorieGoal <= 0) {
+      res.status(400).json({ error: 'dailyCalorieGoal must be a positive number' });
+      return;
+    }
+
+    const user = await authService.updateNutritionGoal(req.userId, Math.round(dailyCalorieGoal));
     res.json(toUserDto(user));
   } catch (err) {
     next(err);

@@ -1,17 +1,26 @@
 import { prisma } from '../lib/prisma';
 
+export type PlanExerciseSetInput = {
+  order: number;
+  targetReps: number | null;
+  targetWeightKg: number | null;
+};
+
 export type PlanExerciseInput = {
   exerciseId: string;
   order: number;
-  targetSets: number;
-  targetReps?: number | null;
   restSeconds: number;
+  notes: string | null;
+  sets: PlanExerciseSetInput[];
 };
 
 const planDetailInclude = {
   planExercises: {
     orderBy: { order: 'asc' as const },
-    include: { exercise: true },
+    include: {
+      exercise: true,
+      sets: { orderBy: { order: 'asc' as const } },
+    },
   },
 };
 
@@ -45,9 +54,15 @@ export function createWorkoutPlan(
         create: exercises.map((e) => ({
           exerciseId: e.exerciseId,
           order: e.order,
-          targetSets: e.targetSets,
-          targetReps: e.targetReps ?? null,
           restSeconds: e.restSeconds,
+          notes: e.notes,
+          sets: {
+            create: e.sets.map((s) => ({
+              order: s.order,
+              targetReps: s.targetReps,
+              targetWeightKg: s.targetWeightKg,
+            })),
+          },
         })),
       },
     },
@@ -76,9 +91,15 @@ export async function updateWorkoutPlan(
           create: exercises.map((e) => ({
             exerciseId: e.exerciseId,
             order: e.order,
-            targetSets: e.targetSets,
-            targetReps: e.targetReps ?? null,
             restSeconds: e.restSeconds,
+            notes: e.notes,
+            sets: {
+              create: e.sets.map((s) => ({
+                order: s.order,
+                targetReps: s.targetReps,
+                targetWeightKg: s.targetWeightKg,
+              })),
+            },
           })),
         },
       },

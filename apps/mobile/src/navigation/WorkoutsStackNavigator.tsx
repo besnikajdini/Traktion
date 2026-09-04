@@ -4,6 +4,8 @@ import { PlanBuilderScreen } from '../screens/PlanBuilderScreen';
 import { ExercisePickerScreen } from '../screens/ExercisePickerScreen';
 import { PlanDetailScreen } from '../screens/PlanDetailScreen';
 import { ActiveSessionScreen } from '../screens/ActiveSessionScreen';
+import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
+import { SessionSummaryScreen } from '../screens/SessionSummaryScreen';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import type { WorkoutsStackParamList } from './types';
@@ -33,6 +35,12 @@ export function WorkoutsStackNavigator() {
         name="ActiveSession"
         component={ActiveSessionScreen}
         options={{ title: 'Workout', gestureEnabled: false }}
+      />
+      <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} options={{ title: 'Exercise' }} />
+      <Stack.Screen
+        name="SessionSummary"
+        component={SessionSummaryScreen}
+        options={{ title: 'Summary', gestureEnabled: false, headerBackVisible: false }}
       />
     </Stack.Navigator>
   );

@@ -1,25 +1,41 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { Exercise } from '@traktion/shared-types';
-import { searchExercises } from '../services/exercises';
+import type { Exercise, ExerciseFilterOptions } from '@traktion/shared-types';
+import { getExerciseFilters, searchExercises } from '../services/exercises';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { MuscleFilterModal } from '../components/MuscleFilterModal';
+import { EquipmentFilterModal } from '../components/EquipmentFilterModal';
+import { PressableOpacity } from '../components/PressableOpacity';
+import { useExercisePickerStore } from '../store/exercisePickerStore';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import type { WorkoutsStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<WorkoutsStackParamList, 'ExercisePicker'>;
 
+type OpenFilter = 'bodyPart' | 'equipment' | null;
+
 export function ExercisePickerScreen({ navigation }: Props) {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 300);
+  const [bodyParts, setBodyParts] = useState<string[]>([]);
+  const [equipment, setEquipment] = useState<string[]>([]);
+  const [openFilter, setOpenFilter] = useState<OpenFilter>(null);
+  const [filterOptions, setFilterOptions] = useState<ExerciseFilterOptions>({ bodyParts: [], equipment: [] });
   const [results, setResults] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    getExerciseFilters()
+      .then(setFilterOptions)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    searchExercises(debouncedQuery)
+    searchExercises({ search: debouncedQuery, bodyParts, equipment })
       .then((exercises) => {
         if (!cancelled) setResults(exercises);
       })
@@ -30,14 +46,11 @@ export function ExercisePickerScreen({ navigation }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, bodyParts, equipment]);
 
   const pickExercise = (exercise: Exercise) => {
-    navigation.navigate({
-      name: 'PlanBuilder',
-      params: { pickedExercise: exercise },
-      merge: true,
-    });
+    useExercisePickerStore.getState().setPickedExercise(exercise);
+    navigation.goBack();
   };
 
   return (
@@ -50,6 +63,26 @@ export function ExercisePickerScreen({ navigation }: Props) {
         onChangeText={setQuery}
         autoFocus
       />
+
+      <View style={styles.filterRow}>
+        <PressableOpacity
+          style={[styles.filterButton, bodyParts.length > 0 && styles.filterButtonActive]}
+          onPress={() => setOpenFilter('bodyPart')}
+        >
+          <Text style={[styles.filterText, bodyParts.length > 0 && styles.filterTextActive]}>
+            {bodyParts.length > 0 ? `Muscle (${bodyParts.length})` : 'Muscle'}
+          </Text>
+        </PressableOpacity>
+        <PressableOpacity
+          style={[styles.filterButton, equipment.length > 0 && styles.filterButtonActive]}
+          onPress={() => setOpenFilter('equipment')}
+        >
+          <Text style={[styles.filterText, equipment.length > 0 && styles.filterTextActive]}>
+            {equipment.length > 0 ? `Equipment (${equipment.length})` : 'Equipment'}
+          </Text>
+        </PressableOpacity>
+      </View>
+
       {loading ? (
         <ActivityIndicator style={styles.loading} color={colors.primary} />
       ) : (
@@ -59,7 +92,7 @@ export function ExercisePickerScreen({ navigation }: Props) {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={<Text style={styles.emptyText}>No exercises found.</Text>}
           renderItem={({ item }) => (
-            <Pressable style={styles.row} onPress={() => pickExercise(item)}>
+            <PressableOpacity style={styles.row} onPress={() => pickExercise(item)}>
               {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.thumbnail} />
               ) : (
@@ -68,14 +101,33 @@ export function ExercisePickerScreen({ navigation }: Props) {
               <View style={styles.rowText}>
                 <Text style={styles.name}>{item.name}</Text>
                 <Text style={styles.meta}>
-                  {item.muscleGroup}
+                  {item.bodyPart}
                   {item.equipment ? ` · ${item.equipment}` : ''}
                 </Text>
               </View>
-            </Pressable>
+            </PressableOpacity>
           )}
         />
       )}
+
+      <MuscleFilterModal
+        visible={openFilter === 'bodyPart'}
+        options={filterOptions.bodyParts}
+        selected={bodyParts}
+        search={debouncedQuery}
+        otherFilterValues={equipment}
+        onApply={setBodyParts}
+        onClose={() => setOpenFilter(null)}
+      />
+      <EquipmentFilterModal
+        visible={openFilter === 'equipment'}
+        options={filterOptions.equipment}
+        selected={equipment}
+        search={debouncedQuery}
+        otherFilterValues={bodyParts}
+        onApply={setEquipment}
+        onClose={() => setOpenFilter(null)}
+      />
     </View>
   );
 }
@@ -88,12 +140,40 @@ const styles = StyleSheet.create({
   search: {
     ...typography.body,
     margin: 16,
+    marginBottom: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    color: colors.text,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  filterButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted,
+  },
+  filterText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textTransform: 'capitalize',
+  },
+  filterTextActive: {
     color: colors.text,
   },
   loading: {

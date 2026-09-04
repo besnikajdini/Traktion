@@ -1,4 +1,4 @@
-// Traktion — Phase 0 schema.
+// Traktion — Phase 0 schema, evolving as features are built.
 // Entities and relations are a first-pass design based on the feature set in
 // project-plan.md; expect fields/relations to evolve once features are built.
 
@@ -12,37 +12,47 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  passwordHash  String
-  name          String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String
+  name             String
+  dailyCalorieGoal Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   workoutPlans    WorkoutPlan[]
   workoutSessions WorkoutSession[]
   personalRecords PersonalRecord[]
   foodEntries     FoodEntry[]
+  favoriteMeals   FavoriteMeal[]
   customExercises Exercise[]       @relation("ExerciseCreatedBy")
 }
 
+// Seeded from hasaneyldrm/exercises-dataset (MIT for the data/instructions;
+// imageUrl/gifUrl point at that repo's media, which is (c) Gym visual and
+// used under separate terms — see prisma/seed.ts and DEVELOPMENT_LOG.md).
 model Exercise {
-  id          String   @id @default(uuid())
-  name        String
-  muscleGroup String
-  equipment   String?
-  category    String?
-  imageUrl    String?
-  createdById String?
-  createdAt   DateTime @default(now())
+  id               String   @id @default(uuid())
+  name             String
+  bodyPart         String // broad category (back, chest, shoulders, ...) — used for the picker's muscle filter
+  target           String // specific primary muscle (e.g. "biceps") — shown in exercise detail
+  secondaryMuscles String[]
+  equipment        String?
+  instructions     String? // single paragraph, English
+  instructionSteps String[] // same instructions, step by step, English
+  imageUrl         String? // static thumbnail
+  gifUrl           String? // looping animation ("video" in the exercise detail screen)
+  mediaAttribution String? // required by the media license when imageUrl/gifUrl are set
+  createdById      String?
+  createdAt        DateTime @default(now())
 
-  createdBy    User?          @relation("ExerciseCreatedBy", fields: [createdById], references: [id])
-  planExercise PlanExercise[]
-  setLogs      SetLog[]
+  createdBy       User?            @relation("ExerciseCreatedBy", fields: [createdById], references: [id])
+  planExercise    PlanExercise[]
+  setLogs         SetLog[]
   personalRecords PersonalRecord[]
 
-  @@unique([name])
-  @@index([muscleGroup])
+  @@index([bodyPart])
+  @@index([equipment])
 }
 
 model WorkoutPlan {
@@ -65,15 +75,30 @@ model PlanExercise {
   workoutPlanId String
   exerciseId    String
   order         Int
-  targetSets    Int?
-  targetReps    Int?
+  notes         String?
   restSeconds   Int?
 
-  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
-  exercise    Exercise    @relation(fields: [exerciseId], references: [id])
+  workoutPlan WorkoutPlan        @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise    Exercise           @relation(fields: [exerciseId], references: [id])
+  sets        PlanExerciseSet[]
 
   @@index([workoutPlanId])
   @@index([exerciseId])
+}
+
+// Per-set target for a plan exercise template (e.g. "set 2: 90kg x 8") — lets
+// the routine builder show/edit each set's target weight+reps individually,
+// matching the reference UI, instead of one uniform "N sets x M reps".
+model PlanExerciseSet {
+  id             String  @id @default(uuid())
+  planExerciseId String
+  order          Int
+  targetReps     Int?
+  targetWeightKg Float?
+
+  planExercise PlanExercise @relation(fields: [planExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([planExerciseId])
 }
 
 model WorkoutSession {
@@ -84,9 +109,10 @@ model WorkoutSession {
   endedAt       DateTime?
   notes         String?
 
-  user        User         @relation(fields: [userId], references: [id])
-  workoutPlan WorkoutPlan? @relation(fields: [workoutPlanId], references: [id])
-  setLogs     SetLog[]
+  user            User             @relation(fields: [userId], references: [id])
+  workoutPlan     WorkoutPlan?     @relation(fields: [workoutPlanId], references: [id])
+  setLogs         SetLog[]
+  personalRecords PersonalRecord[]
 
   @@index([userId])
   @@index([workoutPlanId])
@@ -102,26 +128,38 @@ model SetLog {
   rpe              Float?
   completedAt      DateTime @default(now())
 
-  workoutSession WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
-  exercise       Exercise       @relation(fields: [exerciseId], references: [id])
+  workoutSession  WorkoutSession   @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  exercise        Exercise         @relation(fields: [exerciseId], references: [id])
+  personalRecords PersonalRecord[]
 
   @@index([workoutSessionId])
   @@index([exerciseId])
 }
 
+enum PersonalRecordType {
+  MAX_WEIGHT // heaviest weight ever lifted for this exercise
+  MAX_VOLUME // heaviest single-set volume (weight x reps) ever for this exercise
+}
+
 model PersonalRecord {
-  id                String   @id @default(uuid())
-  userId            String
-  exerciseId        String
-  weightKg          Float
-  reps              Int
-  estimatedOneRepMax Float?
-  achievedAt        DateTime @default(now())
+  id               String             @id @default(uuid())
+  userId           String
+  exerciseId       String
+  workoutSessionId String
+  setLogId         String
+  type             PersonalRecordType
+  weightKg         Float
+  reps             Int
+  achievedAt       DateTime           @default(now())
 
-  user     User     @relation(fields: [userId], references: [id])
-  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+  exercise       Exercise       @relation(fields: [exerciseId], references: [id])
+  workoutSession WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  setLog         SetLog         @relation(fields: [setLogId], references: [id], onDelete: Cascade)
 
+  @@unique([setLogId, type])
   @@index([userId, exerciseId])
+  @@index([workoutSessionId])
 }
 
 enum MealType {
@@ -131,18 +169,39 @@ enum MealType {
   SNACK
 }
 
+// Macros are always estimated once (see src/services/nutrition.service.ts)
+// and stored here — never recomputed on read. See DEVELOPMENT_LOG.md for why
+// (Nutritionix's natural-language endpoint, translated from Italian first).
 model FoodEntry {
-  id        String   @id @default(uuid())
-  userId    String
-  name      String
-  calories  Int
-  protein   Float
-  carbs     Float
-  fat       Float
-  mealType  MealType
-  loggedAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  userId      String
+  mealType    MealType
+  description String // raw free-text the user typed, kept for editing/re-use
+  calories    Int
+  protein     Float
+  carbs       Float
+  fat         Float
+  loggedAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId, loggedAt])
+}
+
+// A saved meal the user can re-log with one tap (see FoodLog "Preferiti")
+// without retyping the description or re-running macro estimation.
+model FavoriteMeal {
+  id          String   @id @default(uuid())
+  userId      String
+  mealType    MealType
+  description String
+  calories    Int
+  protein     Float
+  carbs       Float
+  fat         Float
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

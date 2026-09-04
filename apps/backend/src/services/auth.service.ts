@@ -42,3 +42,7 @@ export async function login(email: string, password: string) {
 export function getUserById(userId: string) {
   return prisma.user.findUnique({ where: { id: userId } });
 }
+
+export function updateNutritionGoal(userId: string, dailyCalorieGoal: number) {
+  return prisma.user.update({ where: { id: userId }, data: { dailyCalorieGoal } });
+}

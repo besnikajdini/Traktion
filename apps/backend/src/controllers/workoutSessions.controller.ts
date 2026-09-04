@@ -53,3 +53,12 @@ export async function end(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+
+export async function getPersonalRecords(req: Request, res: Response, next: NextFunction) {
+  try {
+    const records = await workoutSessionsService.getSessionPersonalRecords(req.userId, req.params.id);
+    res.json(records);
+  } catch (err) {
+    next(err);
+  }
+}

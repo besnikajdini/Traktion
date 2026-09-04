@@ -39,8 +39,12 @@ verifies it and attaches the user id as `req.userId`.
 | POST   | `/auth/register`            | Create an account (`{ email, password, name }`) → `{ user, token }`     |
 | POST   | `/auth/login`                | `{ email, password }` → `{ user, token }`                              |
 | GET    | `/auth/me`                  | Get the current user from the token                                     |
-| GET    | `/exercises?search=&muscleGroup=` | Search the seeded exercise catalogue (free-exercise-db)            |
-| GET    | `/exercises/:id`            | Get one exercise                                                        |
+| GET    | `/exercises?search=&bodyPart=&equipment=` | Search the seeded exercise catalogue                      |
+| GET    | `/exercises/filters`        | Distinct `bodyPart`/`equipment` values, for the picker's filter buttons  |
+| GET    | `/exercises/:id`            | Get one exercise (name, media, instructions, ...)                       |
+| GET    | `/exercises/:id/progress`   | Per-session max weight + volume for this exercise (for the progress chart) |
+| GET    | `/exercises/:id/history`    | Every logged set for this exercise, most recent first                   |
+| GET    | `/exercises/:id/personal-records` | Current best (max weight, max volume) for this exercise            |
 | GET    | `/workout-plans`            | List the user's saved plans (summary + exercise count)                  |
 | POST   | `/workout-plans`            | Create a plan with its exercises in one call                            |
 | GET    | `/workout-plans/:id`        | Get a plan with its ordered exercises                                   |
@@ -53,10 +57,12 @@ verifies it and attaches the user id as `req.userId`.
 | POST   | `/set-logs`                 | Log one completed set                                                   |
 | GET    | `/set-logs/last?exerciseId=`| Most recent completed set for that exercise (powers the "last time" hint)|
 | DELETE | `/set-logs/:id`             | Undo a logged set                                                        |
+| GET    | `/workout-sessions/:id/personal-records` | PRs achieved during that session (for the end-of-session summary) |
+| GET    | `/streak`                   | Current + longest streak of consecutive weeks with a finished workout   |
 
 ## Notes
 
-- Phase 1 (Workout Tracker MVP) plus the Phase 0 auth that had been deferred are both implemented — see `/DEVELOPMENT_LOG.md` at the repo root for the full write-up of what was built and why.
-- `prisma/data/exercises.json` is a vendored copy of [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain), seeded via `prisma/seed.ts` — including each exercise's first thumbnail, stored as a full `imageUrl` pointing at the dataset's own GitHub-hosted images.
+- Phase 1 (Workout Tracker MVP), the Phase 0 auth that had been deferred, and Phase 2 (PR detection, progress, streaks) are all implemented — see `/DEVELOPMENT_LOG.md` at the repo root for the full write-up of what was built and why.
+- `prisma/data/exercises.json` is a vendored copy of [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) (1324 exercises). **Licensing is split**: the data/instructions are MIT, but `imageUrl`/`gifUrl` point at that repo's media, which is © Gym visual and used there under separate permission that does **not** extend to this project — see `prisma/seed.ts` and `DEVELOPMENT_LOG.md` for the full note. Every exercise carries a `mediaAttribution` string that must stay visible next to its image/GIF in the UI.
 - Auth is JWT (`jsonwebtoken`) + bcrypt (`bcryptjs`), per `project-plan.md`'s stack table — no refresh tokens yet, tokens are just long-lived (30 days).
 - The Prisma schema is a first-pass design inferred from the entity list in the project plan; expect it to evolve (e.g. refresh tokens, soft deletes) as later phases are built.

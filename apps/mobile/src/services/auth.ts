@@ -17,3 +17,7 @@ export function login(email: string, password: string): Promise<AuthResponse> {
 export function getMe(): Promise<User> {
   return api.get<User>('/auth/me');
 }
+
+export function updateNutritionGoal(dailyCalorieGoal: number): Promise<User> {
+  return api.put<User>('/auth/me/nutrition-goal', { dailyCalorieGoal });
+}

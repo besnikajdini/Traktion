@@ -1,4 +1,4 @@
-import type { StartWorkoutSessionInput, WorkoutSessionDetail } from '@traktion/shared-types';
+import type { PersonalRecordWithExercise, StartWorkoutSessionInput, WorkoutSessionDetail } from '@traktion/shared-types';
 import { api } from './api';
 
 export function getActiveSession(): Promise<WorkoutSessionDetail | null> {
@@ -15,4 +15,8 @@ export function startSession(input: StartWorkoutSessionInput): Promise<WorkoutSe
 
 export function endSession(id: string): Promise<WorkoutSessionDetail> {
   return api.post<WorkoutSessionDetail>(`/workout-sessions/${id}/end`);
+}
+
+export function getSessionPersonalRecords(id: string): Promise<PersonalRecordWithExercise[]> {
+  return api.get<PersonalRecordWithExercise[]>(`/workout-sessions/${id}/personal-records`);
 }

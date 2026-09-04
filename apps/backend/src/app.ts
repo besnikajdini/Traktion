@@ -6,6 +6,9 @@ import { exercisesRouter } from './routes/exercises';
 import { workoutPlansRouter } from './routes/workoutPlans';
 import { workoutSessionsRouter } from './routes/workoutSessions';
 import { setLogsRouter } from './routes/setLogs';
+import { streakRouter } from './routes/streak';
+import { foodEntriesRouter } from './routes/foodEntries';
+import { favoriteMealsRouter } from './routes/favoriteMeals';
 import { requireAuth } from './middleware/requireAuth';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -22,6 +25,9 @@ export function createApp() {
   app.use('/workout-plans', requireAuth, workoutPlansRouter);
   app.use('/workout-sessions', requireAuth, workoutSessionsRouter);
   app.use('/set-logs', requireAuth, setLogsRouter);
+  app.use('/streak', requireAuth, streakRouter);
+  app.use('/food-entries', requireAuth, foodEntriesRouter);
+  app.use('/favorite-meals', requireAuth, favoriteMealsRouter);
 
   app.use(errorHandler);
 

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { WorkoutPlanDetail } from '@traktion/shared-types';
@@ -83,12 +83,20 @@ export function PlanDetailScreen({ navigation, route }: Props) {
 
       <View style={styles.list}>
         {plan.planExercises.map((pe) => (
-          <View key={pe.id} style={styles.exerciseCard}>
-            <Text style={styles.exerciseName}>{pe.exercise.name}</Text>
-            <Text style={styles.exerciseMeta}>
-              {pe.targetSets ?? '—'} sets{pe.targetReps ? ` × ${pe.targetReps} reps` : ''} · rest {pe.restSeconds ?? 0}s
-            </Text>
-          </View>
+          <Pressable
+            key={pe.id}
+            style={styles.exerciseCard}
+            onPress={() => navigation.navigate('ExerciseDetail', { exerciseId: pe.exerciseId })}
+          >
+            {pe.exercise.imageUrl && <Image source={{ uri: pe.exercise.imageUrl }} style={styles.exerciseThumbnail} />}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.exerciseName}>{pe.exercise.name}</Text>
+              <Text style={styles.exerciseMeta}>
+                {pe.sets.length} sets{pe.sets[0]?.targetReps ? ` × ${pe.sets[0].targetReps} reps` : ''} · rest{' '}
+                {pe.restSeconds ?? 0}s
+              </Text>
+            </View>
+          </Pressable>
         ))}
       </View>
 
@@ -137,9 +145,18 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   exerciseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
+  },
+  exerciseThumbnail: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceAlt,
   },
   exerciseName: {
     ...typography.cardTitle,

@@ -12,7 +12,7 @@ type Props = {
   onUndo: () => void;
 };
 
-export function SetRow({ setNumber, completedLog, lastSetLog, onComplete, onUndo }: Props) {
+export function SetTableRow({ setNumber, completedLog, lastSetLog, onComplete, onUndo }: Props) {
   const isCompleted = !!completedLog;
   const [weight, setWeight] = useState(() => initialValue(completedLog?.weightKg, lastSetLog?.weightKg));
   const [reps, setReps] = useState(() => initialValue(completedLog?.reps, lastSetLog?.reps));
@@ -29,40 +29,32 @@ export function SetRow({ setNumber, completedLog, lastSetLog, onComplete, onUndo
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.mainRow}>
-        <Text style={styles.setLabel}>{setNumber}</Text>
-        <TextInput
-          style={[styles.input, isCompleted && styles.inputDisabled]}
-          keyboardType="decimal-pad"
-          placeholder="kg"
-          placeholderTextColor={colors.textMuted}
-          value={weight}
-          onChangeText={setWeight}
-          editable={!isCompleted}
-        />
-        <TextInput
-          style={[styles.input, isCompleted && styles.inputDisabled]}
-          keyboardType="number-pad"
-          placeholder="reps"
-          placeholderTextColor={colors.textMuted}
-          value={reps}
-          onChangeText={setReps}
-          editable={!isCompleted}
-        />
-        <Pressable
-          style={[styles.check, isCompleted && styles.checkDone]}
-          onPress={handlePress}
-          hitSlop={8}
-        >
-          <Text style={styles.checkText}>{isCompleted ? '✓' : ''}</Text>
-        </Pressable>
-      </View>
-      {!isCompleted && lastSetLog && (
-        <Text style={styles.lastTime}>
-          last time: {formatNumber(lastSetLog.weightKg)} kg × {lastSetLog.reps} reps
-        </Text>
-      )}
+    <View style={[styles.container, isCompleted && styles.containerCompleted]}>
+      <Text style={styles.setLabel}>{setNumber}</Text>
+      <Text style={styles.lastTime} numberOfLines={1}>
+        {lastSetLog ? `${formatNumber(lastSetLog.weightKg)}kg × ${lastSetLog.reps}` : '—'}
+      </Text>
+      <TextInput
+        style={[styles.input, isCompleted && styles.inputDisabled]}
+        keyboardType="decimal-pad"
+        placeholder="kg"
+        placeholderTextColor={colors.textMuted}
+        value={weight}
+        onChangeText={setWeight}
+        editable={!isCompleted}
+      />
+      <TextInput
+        style={[styles.input, isCompleted && styles.inputDisabled]}
+        keyboardType="number-pad"
+        placeholder="reps"
+        placeholderTextColor={colors.textMuted}
+        value={reps}
+        onChangeText={setReps}
+        editable={!isCompleted}
+      />
+      <Pressable style={({ pressed }) => [styles.check, isCompleted && styles.checkDone, pressed && styles.checkPressed]} onPress={handlePress}>
+        <Text style={styles.checkText}>{isCompleted ? '✓' : ''}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -79,20 +71,27 @@ function formatNumber(n: number): string {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 4,
-    paddingVertical: 8,
-  },
-  mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  containerCompleted: {
+    backgroundColor: colors.successMuted,
   },
   setLabel: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: 14,
-    width: 20,
+    width: 18,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  lastTime: {
+    ...typography.caption,
+    width: 68,
+    color: colors.textMuted,
   },
   input: {
     ...typography.body,
@@ -109,9 +108,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   check: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
@@ -121,13 +120,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
     borderColor: colors.success,
   },
+  checkPressed: {
+    opacity: 0.7,
+  },
   checkText: {
     color: colors.background,
     fontWeight: '700',
-  },
-  lastTime: {
-    ...typography.caption,
-    marginLeft: 30,
-    color: colors.textMuted,
   },
 });

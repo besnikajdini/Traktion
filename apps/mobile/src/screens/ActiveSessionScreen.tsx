@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { SetLog } from '@traktion/shared-types';
 import { getSession, endSession } from '../services/workoutSessions';
 import { createSetLog, deleteSetLog, getLastSetLog } from '../services/setLogs';
 import { useSessionStore } from '../store/sessionStore';
-import { SetRow } from '../components/SetRow';
+import { SetTableRow } from '../components/SetTableRow';
+import { ExerciseBlockHeader } from '../components/ExerciseBlockHeader';
 import { RestTimerBar } from '../components/RestTimerBar';
+import { PressableOpacity } from '../components/PressableOpacity';
 import { colors } from '../theme/colors';
-import { fontFamily, typography } from '../theme/typography';
+import { shadows } from '../theme/shadows';
+import { fontFamily } from '../theme/typography';
 import type { WorkoutsStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<WorkoutsStackParamList, 'ActiveSession'>;
-
-const DEFAULT_REST_SECONDS = 90;
 
 export function ActiveSessionScreen({ navigation, route }: Props) {
   const { sessionId } = route.params;
@@ -27,6 +28,11 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
   const [lastSets, setLastSets] = useState<Record<string, SetLog | null>>({});
   const [loading, setLoading] = useState(true);
   const [finishing, setFinishing] = useState(false);
+  // Rest duration chosen for this exercise in this session, keyed by
+  // PlanExercise id (not exerciseId — the same exercise can appear twice in
+  // one plan). Seeded from the plan's stored default; `null` = "Nessuno" =
+  // completing a set for that exercise won't auto-start the rest timer.
+  const [restDurations, setRestDurations] = useState<Record<string, number | null>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +40,11 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
       .then(async (result) => {
         if (cancelled) return;
         setSession(result);
+        setRestDurations(
+          Object.fromEntries(
+            (result.workoutPlan?.planExercises ?? []).map((pe) => [pe.id, pe.restSeconds ?? null]),
+          ),
+        );
 
         const exerciseIds = [...new Set(result.workoutPlan?.planExercises.map((pe) => pe.exerciseId) ?? [])];
         const entries = await Promise.all(
@@ -53,9 +64,9 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={handleFinish} disabled={finishing} hitSlop={8}>
+        <PressableOpacity onPress={handleFinish} disabled={finishing} hitSlop={8}>
           <Text style={styles.finishText}>{finishing ? '...' : 'Finish'}</Text>
-        </Pressable>
+        </PressableOpacity>
       ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,7 +78,7 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
       await endSession(sessionId);
       await clearRestTimer();
       setSession(null);
-      navigation.popToTop();
+      navigation.replace('SessionSummary', { sessionId });
     } catch {
       Alert.alert('Error', 'Could not finish the workout.');
     } finally {
@@ -78,7 +89,7 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
   const handleComplete = async (
     exerciseId: string,
     exerciseName: string,
-    restSeconds: number,
+    restSeconds: number | null,
     setNumber: number,
     weightKg: number,
     reps: number,
@@ -86,7 +97,9 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
     try {
       const log = await createSetLog({ workoutSessionId: sessionId, exerciseId, setNumber, reps, weightKg });
       addSetLog(log);
-      await startRestTimer(exerciseId, exerciseName, restSeconds);
+      if (restSeconds !== null) {
+        await startRestTimer(exerciseId, exerciseName, restSeconds);
+      }
     } catch {
       Alert.alert('Error', 'Could not log this set.');
     }
@@ -114,27 +127,34 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         {session.workoutPlan.planExercises.map((pe) => {
           const completedForExercise = session.setLogs.filter((l) => l.exerciseId === pe.exerciseId);
-          const rowCount = Math.max(pe.targetSets ?? 1, completedForExercise.length);
-          const restSeconds = pe.restSeconds ?? DEFAULT_REST_SECONDS;
+          const rowCount = Math.max(pe.sets.length || 1, completedForExercise.length);
+          const chosenRest = restDurations[pe.id] ?? null;
 
           return (
             <View key={pe.id} style={styles.exerciseSection}>
-              <Text style={styles.exerciseName}>{pe.exercise.name}</Text>
-              {Array.from({ length: rowCount }, (_, i) => i + 1).map((setNumber) => (
-                <SetRow
-                  key={setNumber}
-                  setNumber={setNumber}
-                  completedLog={completedForExercise.find((l) => l.setNumber === setNumber)}
-                  lastSetLog={lastSets[pe.exerciseId] ?? null}
-                  onComplete={(weightKg, reps) =>
-                    handleComplete(pe.exerciseId, pe.exercise.name, restSeconds, setNumber, weightKg, reps)
-                  }
-                  onUndo={() => {
-                    const log = completedForExercise.find((l) => l.setNumber === setNumber);
-                    if (log) handleUndo(log.id);
-                  }}
-                />
-              ))}
+              <ExerciseBlockHeader
+                exercise={pe.exercise}
+                restSeconds={chosenRest}
+                onSelectRest={(seconds) => setRestDurations((prev) => ({ ...prev, [pe.id]: seconds }))}
+                onPressExercise={() => navigation.navigate('ExerciseDetail', { exerciseId: pe.exerciseId })}
+              />
+              <View style={styles.setsList}>
+                {Array.from({ length: rowCount }, (_, i) => i + 1).map((setNumber) => (
+                  <SetTableRow
+                    key={setNumber}
+                    setNumber={setNumber}
+                    completedLog={completedForExercise.find((l) => l.setNumber === setNumber)}
+                    lastSetLog={lastSets[pe.exerciseId] ?? null}
+                    onComplete={(weightKg, reps) =>
+                      handleComplete(pe.exerciseId, pe.exercise.name, chosenRest, setNumber, weightKg, reps)
+                    }
+                    onUndo={() => {
+                      const log = completedForExercise.find((l) => l.setNumber === setNumber);
+                      if (log) handleUndo(log.id);
+                    }}
+                  />
+                ))}
+              </View>
             </View>
           );
         })}
@@ -164,11 +184,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
+    ...shadows.card,
   },
-  exerciseName: {
-    ...typography.cardTitle,
-    color: colors.text,
-    marginBottom: 4,
+  setsList: {
+    marginTop: 10,
+    gap: 4,
   },
   finishText: {
     fontFamily: fontFamily.bodySemiBold,

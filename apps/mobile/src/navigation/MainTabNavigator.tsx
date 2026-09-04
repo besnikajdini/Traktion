@@ -3,7 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { HomeScreen } from '../screens/HomeScreen';
 import { WorkoutsStackNavigator } from './WorkoutsStackNavigator';
 import { ProgressScreen } from '../screens/ProgressScreen';
-import { FoodLogScreen } from '../screens/FoodLogScreen';
+import { FoodLogStackNavigator } from './FoodLogStackNavigator';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
@@ -37,7 +37,7 @@ export function MainTabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Workouts" component={WorkoutsStackNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
-      <Tab.Screen name="FoodLog" component={FoodLogScreen} options={{ title: 'Food Log' }} />
+      <Tab.Screen name="FoodLog" component={FoodLogStackNavigator} options={{ headerShown: false, title: 'Food Log' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

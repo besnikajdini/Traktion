@@ -1,6 +1,26 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as workoutPlansService from '../services/workoutPlans.service';
-import type { PlanExerciseInput } from '../services/workoutPlans.service';
+import type { PlanExerciseInput, PlanExerciseSetInput } from '../services/workoutPlans.service';
+
+function parseSets(value: unknown): PlanExerciseSetInput[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+
+  const parsedSets: PlanExerciseSetInput[] = [];
+  for (const raw of value) {
+    if (typeof raw !== 'object' || raw === null) return null;
+    const { order, targetReps, targetWeightKg } = raw as Record<string, unknown>;
+    if (typeof order !== 'number') return null;
+    if (targetReps !== undefined && targetReps !== null && typeof targetReps !== 'number') return null;
+    if (targetWeightKg !== undefined && targetWeightKg !== null && typeof targetWeightKg !== 'number') return null;
+
+    parsedSets.push({
+      order,
+      targetReps: typeof targetReps === 'number' ? targetReps : null,
+      targetWeightKg: typeof targetWeightKg === 'number' ? targetWeightKg : null,
+    });
+  }
+  return parsedSets;
+}
 
 function parsePlanBody(body: unknown): { name: string; description: string | null; exercises: PlanExerciseInput[] } | null {
   if (typeof body !== 'object' || body === null) return null;
@@ -12,19 +32,21 @@ function parsePlanBody(body: unknown): { name: string; description: string | nul
   const parsedExercises: PlanExerciseInput[] = [];
   for (const raw of exercises) {
     if (typeof raw !== 'object' || raw === null) return null;
-    const { exerciseId, order, targetSets, targetReps, restSeconds } = raw as Record<string, unknown>;
+    const { exerciseId, order, restSeconds, notes, sets } = raw as Record<string, unknown>;
     if (typeof exerciseId !== 'string') return null;
     if (typeof order !== 'number') return null;
-    if (typeof targetSets !== 'number' || targetSets <= 0) return null;
     if (typeof restSeconds !== 'number' || restSeconds < 0) return null;
-    if (targetReps !== undefined && targetReps !== null && typeof targetReps !== 'number') return null;
+    if (notes !== undefined && notes !== null && typeof notes !== 'string') return null;
+
+    const parsedSets = parseSets(sets);
+    if (!parsedSets) return null;
 
     parsedExercises.push({
       exerciseId,
       order,
-      targetSets,
-      targetReps: typeof targetReps === 'number' ? targetReps : null,
       restSeconds,
+      notes: typeof notes === 'string' && notes.trim().length > 0 ? notes.trim() : null,
+      sets: parsedSets,
     });
   }
 

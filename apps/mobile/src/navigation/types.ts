@@ -1,19 +1,26 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import type { Exercise } from '@traktion/shared-types';
 
 export type WorkoutsStackParamList = {
   WorkoutPlansList: undefined;
-  PlanBuilder: { planId?: string; pickedExercise?: Exercise } | undefined;
+  PlanBuilder: { planId?: string } | undefined;
   ExercisePicker: undefined;
   PlanDetail: { planId: string };
   ActiveSession: { sessionId: string };
+  ExerciseDetail: { exerciseId: string };
+  SessionSummary: { sessionId: string };
+};
+
+export type FoodLogStackParamList = {
+  FoodLogHome: undefined;
+  AddMeal: undefined;
+  NutritionGoal: undefined;
 };
 
 export type RootTabParamList = {
   Home: undefined;
   Workouts: NavigatorScreenParams<WorkoutsStackParamList>;
   Progress: undefined;
-  FoodLog: undefined;
+  FoodLog: NavigatorScreenParams<FoodLogStackParamList>;
   Profile: undefined;
 };
 

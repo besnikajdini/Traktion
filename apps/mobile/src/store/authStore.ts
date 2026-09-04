@@ -19,6 +19,7 @@ interface AuthStore {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -75,4 +76,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
     setAuthToken(null);
     set({ user: null, status: 'signedOut' });
   },
+
+  setUser: (user) => set({ user }),
 }));

@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSessionStore } from '../store/sessionStore';
 import { useCountdown } from '../hooks/useCountdown';
+import { PressableOpacity } from './PressableOpacity';
 import { colors } from '../theme/colors';
+import { shadows } from '../theme/shadows';
 import { typography } from '../theme/typography';
 
 function formatSeconds(total: number): string {
@@ -50,15 +52,15 @@ export function RestTimerBar() {
           <Text style={styles.time}>{formatSeconds(secondsLeft)}</Text>
         </View>
         <View style={styles.buttons}>
-          <Pressable style={styles.adjustButton} onPress={() => adjustRestTimer(-15)}>
+          <PressableOpacity style={styles.adjustButton} onPress={() => adjustRestTimer(-15)}>
             <Text style={styles.adjustText}>-15s</Text>
-          </Pressable>
-          <Pressable style={styles.adjustButton} onPress={() => adjustRestTimer(15)}>
+          </PressableOpacity>
+          <PressableOpacity style={styles.adjustButton} onPress={() => adjustRestTimer(15)}>
             <Text style={styles.adjustText}>+15s</Text>
-          </Pressable>
-          <Pressable style={styles.skipButton} onPress={() => clearRestTimer()}>
+          </PressableOpacity>
+          <PressableOpacity style={styles.skipButton} onPress={() => clearRestTimer()}>
             <Text style={styles.skipText}>Skip</Text>
-          </Pressable>
+          </PressableOpacity>
         </View>
       </View>
       <View style={styles.progressTrack}>
@@ -75,6 +77,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 12,
     gap: 8,
+    ...shadows.raised,
   },
   row: {
     flexDirection: 'row',
