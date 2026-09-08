@@ -30,7 +30,14 @@
         }
       ],
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Traktion usa le tue foto per allegarle facoltativamente a un allenamento condiviso.",
+          "cameraPermission": "Traktion usa la fotocamera per scattare una foto facoltativa da allegare a un allenamento condiviso."
+        }
+      ]
     ]
   }
 }

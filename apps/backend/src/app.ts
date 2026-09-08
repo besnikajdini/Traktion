@@ -9,6 +9,8 @@ import { setLogsRouter } from './routes/setLogs';
 import { streakRouter } from './routes/streak';
 import { foodEntriesRouter } from './routes/foodEntries';
 import { favoriteMealsRouter } from './routes/favoriteMeals';
+import { workoutPostsRouter } from './routes/workoutPosts';
+import { usersRouter } from './routes/users';
 import { requireAuth } from './middleware/requireAuth';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -28,6 +30,8 @@ export function createApp() {
   app.use('/streak', requireAuth, streakRouter);
   app.use('/food-entries', requireAuth, foodEntriesRouter);
   app.use('/favorite-meals', requireAuth, favoriteMealsRouter);
+  app.use('/workout-posts', requireAuth, workoutPostsRouter);
+  app.use('/users', requireAuth, usersRouter);
 
   app.use(errorHandler);
 

@@ -10,6 +10,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 export function RegisterScreen({ navigation }: Props) {
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -19,7 +20,7 @@ export function RegisterScreen({ navigation }: Props) {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await register(email.trim().toLowerCase(), password, name.trim());
+      await register(email.trim().toLowerCase(), password, name.trim(), username.trim().toLowerCase());
     } catch {
       // error is surfaced from the store
     } finally {
@@ -39,6 +40,15 @@ export function RegisterScreen({ navigation }: Props) {
         placeholderTextColor={colors.textMuted}
         value={name}
         onChangeText={setName}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        placeholderTextColor={colors.textMuted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        value={username}
+        onChangeText={setUsername}
       />
       <TextInput
         style={styles.input}

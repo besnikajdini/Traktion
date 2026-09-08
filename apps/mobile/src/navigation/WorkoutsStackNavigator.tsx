@@ -6,6 +6,7 @@ import { PlanDetailScreen } from '../screens/PlanDetailScreen';
 import { ActiveSessionScreen } from '../screens/ActiveSessionScreen';
 import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
 import { SessionSummaryScreen } from '../screens/SessionSummaryScreen';
+import { ShareWorkoutScreen } from '../screens/ShareWorkoutScreen';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import type { WorkoutsStackParamList } from './types';
@@ -41,6 +42,11 @@ export function WorkoutsStackNavigator() {
         name="SessionSummary"
         component={SessionSummaryScreen}
         options={{ title: 'Summary', gestureEnabled: false, headerBackVisible: false }}
+      />
+      <Stack.Screen
+        name="ShareWorkout"
+        component={ShareWorkoutScreen}
+        options={{ title: 'Condividi', gestureEnabled: false, headerBackVisible: false }}
       />
     </Stack.Navigator>
   );

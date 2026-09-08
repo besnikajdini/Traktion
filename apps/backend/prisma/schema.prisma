@@ -12,13 +12,18 @@ datasource db {
 }
 
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
-  passwordHash     String
-  name             String
-  dailyCalorieGoal Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String   @id @default(uuid())
+  email             String   @unique
+  username          String   @unique
+  passwordHash      String
+  name              String
+  dailyCalorieGoal  Int?
+  // Phase 4 privacy setting — default OFF, see DEVELOPMENT_LOG.md. When off,
+  // the end-of-session share prompt never appears, so no WorkoutPost can be
+  // created for that user without them first opting in here.
+  autoShareWorkouts Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   workoutPlans    WorkoutPlan[]
   workoutSessions WorkoutSession[]
@@ -26,6 +31,10 @@ model User {
   foodEntries     FoodEntry[]
   favoriteMeals   FavoriteMeal[]
   customExercises Exercise[]       @relation("ExerciseCreatedBy")
+  workoutPosts    WorkoutPost[]
+  reactions       Reaction[]
+  following       Follow[]         @relation("Follower") // rows where this user is the one doing the following
+  followers       Follow[]         @relation("Following") // rows where this user is the one being followed
 }
 
 // Seeded from hasaneyldrm/exercises-dataset (MIT for the data/instructions;
@@ -113,6 +122,7 @@ model WorkoutSession {
   workoutPlan     WorkoutPlan?     @relation(fields: [workoutPlanId], references: [id])
   setLogs         SetLog[]
   personalRecords PersonalRecord[]
+  workoutPost     WorkoutPost?
 
   @@index([userId])
   @@index([workoutPlanId])
@@ -204,4 +214,68 @@ model FavoriteMeal {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+// Phase 4 — Social (opt-in, see DEVELOPMENT_LOG.md for the consent model).
+// One post per WorkoutSession (enforced by the unique FK below), created
+// only by an explicit user action — never automatically. Volume/duration/PRs
+// are a snapshot taken at share time and never recomputed, same policy as
+// FoodEntry's stored macros: if the source session is later inspected again
+// nothing here changes retroactively.
+model WorkoutPost {
+  id               String   @id @default(uuid())
+  userId           String
+  workoutSessionId String   @unique
+  totalVolumeKg    Float
+  durationSeconds  Int
+  // Snapshot of PersonalRecordWithExercise-shaped rows:
+  // [{ exerciseName, type, weightKg, reps }]
+  personalRecords  Json
+  photoUrl         String?
+  createdAt        DateTime @default(now())
+
+  user           User           @relation(fields: [userId], references: [id])
+  workoutSession WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  reactions      Reaction[]
+
+  @@index([userId, createdAt])
+}
+
+// Instant, unidirectional, no approval step (see DEVELOPMENT_LOG.md — this
+// was a deliberate simplification, not an oversight).
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id])
+  following User @relation("Following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+enum ReactionType {
+  FIRE
+  STRONG
+  CLAP
+  HEART
+}
+
+// One reaction per user per post (not one-per-type) — tapping a different
+// emoji switches it, tapping the active one removes it. See
+// DEVELOPMENT_LOG.md for why this was picked over Slack-style multi-react.
+model Reaction {
+  id            String       @id @default(uuid())
+  userId        String
+  workoutPostId String
+  type          ReactionType
+  createdAt     DateTime     @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  workoutPost WorkoutPost @relation(fields: [workoutPostId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workoutPostId])
+  @@index([workoutPostId])
 }

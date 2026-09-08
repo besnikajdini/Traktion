@@ -13,14 +13,17 @@ export class AuthError extends Error {
   }
 }
 
-export async function register(email: string, password: string, name: string) {
-  const existing = await prisma.user.findUnique({ where: { email } });
+export async function register(email: string, password: string, name: string, username: string) {
+  const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } });
   if (existing) {
-    throw new AuthError('An account with this email already exists', 409);
+    throw new AuthError(
+      existing.email === email ? 'An account with this email already exists' : 'This username is already taken',
+      409,
+    );
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  const user = await prisma.user.create({ data: { email, passwordHash, name } });
+  const user = await prisma.user.create({ data: { email, passwordHash, name, username } });
 
   return { user, token: signToken(user.id) };
 }
@@ -45,4 +48,9 @@ export function getUserById(userId: string) {
 
 export function updateNutritionGoal(userId: string, dailyCalorieGoal: number) {
   return prisma.user.update({ where: { id: userId }, data: { dailyCalorieGoal } });
+}
+
+// Phase 4 privacy setting — see schema.prisma's comment on User.autoShareWorkouts.
+export function updateAutoShareWorkouts(userId: string, autoShareWorkouts: boolean) {
+  return prisma.user.update({ where: { id: userId }, data: { autoShareWorkouts } });
 }

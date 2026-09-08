@@ -1,4 +1,4 @@
-import type { User } from '@traktion/shared-types';
+import type { RegisterInput, User } from '@traktion/shared-types';
 import { api } from './api';
 
 export interface AuthResponse {
@@ -6,8 +6,8 @@ export interface AuthResponse {
   token: string;
 }
 
-export function register(email: string, password: string, name: string): Promise<AuthResponse> {
-  return api.post<AuthResponse>('/auth/register', { email, password, name });
+export function register(input: RegisterInput): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/register', input);
 }
 
 export function login(email: string, password: string): Promise<AuthResponse> {
@@ -20,4 +20,8 @@ export function getMe(): Promise<User> {
 
 export function updateNutritionGoal(dailyCalorieGoal: number): Promise<User> {
   return api.put<User>('/auth/me/nutrition-goal', { dailyCalorieGoal });
+}
+
+export function updateAutoShareWorkouts(autoShareWorkouts: boolean): Promise<User> {
+  return api.put<User>('/auth/me/auto-share-workouts', { autoShareWorkouts });
 }

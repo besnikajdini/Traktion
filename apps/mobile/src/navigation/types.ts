@@ -8,6 +8,7 @@ export type WorkoutsStackParamList = {
   ActiveSession: { sessionId: string };
   ExerciseDetail: { exerciseId: string };
   SessionSummary: { sessionId: string };
+  ShareWorkout: { sessionId: string };
 };
 
 export type FoodLogStackParamList = {
@@ -16,12 +17,24 @@ export type FoodLogStackParamList = {
   NutritionGoal: undefined;
 };
 
+export type SocialStackParamList = {
+  SocialFeed: undefined;
+  UserSearch: undefined;
+  UserProfile: { userId: string };
+};
+
+export type ProfileStackParamList = {
+  ProfileHome: undefined;
+  Settings: undefined;
+};
+
 export type RootTabParamList = {
   Home: undefined;
   Workouts: NavigatorScreenParams<WorkoutsStackParamList>;
   Progress: undefined;
   FoodLog: NavigatorScreenParams<FoodLogStackParamList>;
-  Profile: undefined;
+  Social: NavigatorScreenParams<SocialStackParamList>;
+  Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 export type RootStackParamList = {

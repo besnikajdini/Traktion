@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PersonalRecordWithExercise, WorkoutSessionDetail } from '@traktion/shared-types';
 import { getSession, getSessionPersonalRecords } from '../services/workoutSessions';
 import { PressableOpacity } from '../components/PressableOpacity';
+import { useAuthStore } from '../store/authStore';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme/shadows';
 import { typography } from '../theme/typography';
@@ -16,6 +17,7 @@ export function SessionSummaryScreen({ navigation, route }: Props) {
   const [session, setSession] = useState<WorkoutSessionDetail | null>(null);
   const [records, setRecords] = useState<PersonalRecordWithExercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const autoShareWorkouts = useAuthStore((s) => s.user?.autoShareWorkouts ?? false);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +83,12 @@ export function SessionSummaryScreen({ navigation, route }: Props) {
         </View>
       )}
 
-      <PressableOpacity style={styles.doneButton} onPress={() => navigation.popToTop()}>
+      <PressableOpacity
+        style={styles.doneButton}
+        onPress={() =>
+          autoShareWorkouts ? navigation.replace('ShareWorkout', { sessionId }) : navigation.popToTop()
+        }
+      >
         <Text style={styles.doneText}>Done</Text>
       </PressableOpacity>
     </ScrollView>

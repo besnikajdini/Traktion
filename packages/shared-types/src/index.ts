@@ -4,16 +4,28 @@
 // Phase 1: Workout Tracker MVP. Phase 2: PR detection, session summaries,
 // progress charts, streaks — plus the exercises-dataset switch and the
 // exercise-picker filters. Phase 3: food tracking (macro estimation,
-// favorites/quick log, daily nutrition summary, calorie goal).
+// favorites/quick log, daily nutrition summary, calorie goal). Phase 4:
+// opt-in social (workout posts, follow graph, reactions) — see
+// DEVELOPMENT_LOG.md for the consent model and visibility decisions.
 
 export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
 
 export interface User {
   id: string;
   email: string;
+  username: string;
   name: string;
   dailyCalorieGoal: number | null;
+  autoShareWorkouts: boolean;
   createdAt: string;
+}
+
+/** Body for POST /auth/register */
+export interface RegisterInput {
+  email: string;
+  password: string;
+  name: string;
+  username: string;
 }
 
 export interface Exercise {
@@ -234,4 +246,62 @@ export interface CreateFavoriteMealInput {
   protein: number;
   carbs: number;
   fat: number;
+}
+
+// --- Phase 4: Social ---
+
+export type ReactionType = 'FIRE' | 'STRONG' | 'CLAP' | 'HEART';
+
+/** A snapshot of one PR earned in the shared session — never recomputed. */
+export interface WorkoutPostPersonalRecord {
+  exerciseName: string;
+  type: PersonalRecordType;
+  weightKg: number;
+  reps: number;
+}
+
+/** The public-facing user info embedded in a WorkoutPost and search results. */
+export interface PublicUser {
+  id: string;
+  username: string;
+  name: string;
+}
+
+export interface WorkoutPost {
+  id: string;
+  user: PublicUser;
+  workoutSessionId: string;
+  totalVolumeKg: number;
+  durationSeconds: number;
+  personalRecords: WorkoutPostPersonalRecord[];
+  photoUrl: string | null;
+  createdAt: string;
+  reactionCounts: Record<ReactionType, number>;
+  /** The requesting user's own reaction on this post, if any. */
+  myReaction: ReactionType | null;
+}
+
+/** Body for POST /workout-posts */
+export interface CreateWorkoutPostInput {
+  workoutSessionId: string;
+  photoUrl?: string | null;
+}
+
+/** Cursor-paginated result — GET /workout-posts/feed and GET /users/:id/workout-posts */
+export interface WorkoutPostPage {
+  items: WorkoutPost[];
+  nextCursor: string | null;
+}
+
+/** GET /users/search?q= result row */
+export interface UserSearchResult extends PublicUser {
+  isFollowing: boolean;
+}
+
+/** GET /users/:id/profile */
+export interface PublicUserProfile extends PublicUser {
+  followerCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+  isSelf: boolean;
 }

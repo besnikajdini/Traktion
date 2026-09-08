@@ -8,3 +8,4 @@ authRouter.post('/register', authController.register);
 authRouter.post('/login', authController.login);
 authRouter.get('/me', requireAuth, authController.me);
 authRouter.put('/me/nutrition-goal', requireAuth, authController.updateNutritionGoal);
+authRouter.put('/me/auto-share-workouts', requireAuth, authController.updateAutoShareWorkouts);

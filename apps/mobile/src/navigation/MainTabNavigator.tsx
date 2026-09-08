@@ -4,7 +4,8 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { WorkoutsStackNavigator } from './WorkoutsStackNavigator';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { FoodLogStackNavigator } from './FoodLogStackNavigator';
-import { ProfileScreen } from '../screens/ProfileScreen';
+import { SocialStackNavigator } from './SocialStackNavigator';
+import { ProfileStackNavigator } from './ProfileStackNavigator';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import type { RootTabParamList } from './types';
@@ -16,6 +17,7 @@ const ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
   Workouts: 'barbell',
   Progress: 'trending-up',
   FoodLog: 'restaurant',
+  Social: 'people',
   Profile: 'person',
 };
 
@@ -38,7 +40,8 @@ export function MainTabNavigator() {
       <Tab.Screen name="Workouts" component={WorkoutsStackNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="FoodLog" component={FoodLogStackNavigator} options={{ headerShown: false, title: 'Food Log' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Social" component={SocialStackNavigator} options={{ headerShown: false }} />
+      <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }

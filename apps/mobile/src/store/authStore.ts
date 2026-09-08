@@ -17,7 +17,7 @@ interface AuthStore {
   error: string | null;
   restore: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
 }
@@ -58,10 +58,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
 
-  register: async (email, password, name) => {
+  register: async (email, password, name, username) => {
     set({ error: null });
     try {
-      const { user, token } = await authService.register(email, password, name);
+      const { user, token } = await authService.register({ email, password, name, username });
       await SecureStore.setItemAsync(TOKEN_KEY, token);
       setAuthToken(token);
       set({ user, status: 'signedIn' });
