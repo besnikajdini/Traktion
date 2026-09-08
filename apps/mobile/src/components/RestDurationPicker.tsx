@@ -128,11 +128,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   presetChip: {
+    minHeight: 40,
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   presetChipActive: {
     borderColor: colors.primary,

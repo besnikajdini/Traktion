@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { Exercise, PlanExerciseDraft } from '@traktion/shared-types';
 import { RestDurationPicker } from './RestDurationPicker';
 import { PressableOpacity } from './PressableOpacity';
@@ -41,12 +41,12 @@ export function PlanExerciseEditorRow({ exercise, draft, onChange, onRemove, onP
         ) : (
           <View style={styles.thumbnailPlaceholder} />
         )}
-        <Pressable style={{ flex: 1 }} onPress={onPressExercise} disabled={!onPressExercise}>
+        <PressableOpacity style={{ flex: 1 }} onPress={onPressExercise} disabled={!onPressExercise}>
           <Text style={styles.name}>{exercise.name}</Text>
-        </Pressable>
-        <Pressable onPress={onRemove} hitSlop={8}>
+        </PressableOpacity>
+        <PressableOpacity onPress={onRemove} hitSlop={8}>
           <Text style={styles.remove}>Rimuovi</Text>
-        </Pressable>
+        </PressableOpacity>
       </View>
 
       <TextInput
@@ -89,9 +89,9 @@ export function PlanExerciseEditorRow({ exercise, draft, onChange, onRemove, onP
               value={set.targetReps !== null ? String(set.targetReps) : ''}
               onChangeText={(text) => updateSet(index, { targetReps: parseOptionalNumber(text) })}
             />
-            <Pressable style={styles.colRemove} onPress={() => removeSet(index)} hitSlop={12}>
+            <PressableOpacity style={styles.colRemove} onPress={() => removeSet(index)} hitSlop={12}>
               <Text style={styles.removeSetText}>×</Text>
-            </Pressable>
+            </PressableOpacity>
           </View>
         ))}
       </View>
@@ -147,7 +147,13 @@ const styles = StyleSheet.create({
   notesInput: {
     ...typography.caption,
     color: colors.text,
-    minHeight: 32,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 36,
   },
   table: {
     gap: 6,

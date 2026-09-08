@@ -157,12 +157,13 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     flex: 1,
+    minHeight: 44,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    paddingVertical: 8,
     paddingHorizontal: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   filterButtonActive: {
     borderColor: colors.primary,

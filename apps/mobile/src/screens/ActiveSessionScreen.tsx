@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { SetLog } from '@traktion/shared-types';
 import { getSession, endSession } from '../services/workoutSessions';
@@ -9,6 +10,7 @@ import { SetTableRow } from '../components/SetTableRow';
 import { ExerciseBlockHeader } from '../components/ExerciseBlockHeader';
 import { RestTimerBar } from '../components/RestTimerBar';
 import { PressableOpacity } from '../components/PressableOpacity';
+import { ErrorState } from '../components/ErrorState';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme/shadows';
 import { fontFamily } from '../theme/typography';
@@ -27,6 +29,7 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
 
   const [lastSets, setLastSets] = useState<Record<string, SetLog | null>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [finishing, setFinishing] = useState(false);
   // Rest duration chosen for this exercise in this session, keyed by
   // PlanExercise id (not exerciseId — the same exercise can appear twice in
@@ -34,11 +37,11 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
   // completing a set for that exercise won't auto-start the rest timer.
   const [restDurations, setRestDurations] = useState<Record<string, number | null>>({});
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
     getSession(sessionId)
       .then(async (result) => {
-        if (cancelled) return;
         setSession(result);
         setRestDurations(
           Object.fromEntries(
@@ -50,16 +53,16 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
         const entries = await Promise.all(
           exerciseIds.map(async (exerciseId) => [exerciseId, await getLastSetLog(exerciseId).catch(() => null)] as const),
         );
-        if (!cancelled) setLastSets(Object.fromEntries(entries));
+        setLastSets(Object.fromEntries(entries));
       })
-      .catch(() => Alert.alert('Error', 'Could not load this workout.'))
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, [sessionId, setSession]);
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -78,6 +81,7 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
       await endSession(sessionId);
       await clearRestTimer();
       setSession(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.replace('SessionSummary', { sessionId });
     } catch {
       Alert.alert('Error', 'Could not finish the workout.');
@@ -114,12 +118,16 @@ export function ActiveSessionScreen({ navigation, route }: Props) {
     }
   };
 
-  if (loading || !session?.workoutPlan) {
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
+  }
+
+  if (error || !session?.workoutPlan) {
+    return <ErrorState message="Could not load this workout." retryLabel="Try again" onRetry={load} />;
   }
 
   return (

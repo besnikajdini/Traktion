@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Exercise, PlanExerciseDraft } from '@traktion/shared-types';
@@ -104,6 +105,7 @@ export function PlanBuilderScreen({ navigation, route }: Props) {
       } else {
         await createWorkoutPlan(input);
       }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.goBack();
     } catch {
       Alert.alert('Error', 'Could not save this plan.');

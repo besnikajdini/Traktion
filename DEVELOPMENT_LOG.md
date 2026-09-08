@@ -3,6 +3,30 @@
 This file explains what was built in each phase of the project, in plain language, so anyone
 can follow along without reading all the code. It matches the phases in `project-plan.md`.
 
+## Project summary
+
+Traktion is a full-stack fitness app built solo, phase by phase, each one shipped and tested
+before the next started:
+
+- **Phase 0 — Setup**: the monorepo, the blue/black design system, basic email/password auth.
+- **Phase 1 — Workout Tracker MVP**: build a workout plan from a real exercise database, run a
+  session, log sets, and a configurable rest timer with haptic feedback.
+- **Phase 2 — Progress & Motivation**: automatic personal-record detection, end-of-session
+  summaries, per-exercise progress charts, and weekly workout streaks.
+- **Phase 3 — Food Tracking**: free-text meal logging with macros estimated entirely locally
+  (no paid API — see that phase's write-up for why this changed mid-build), favorites/quick-log,
+  and a daily calorie budget.
+- **Phase 4 — Social**: entirely opt-in (off by default) sharing of finished workouts, a
+  following-feed, user search/profiles, and emoji reactions — with a privacy model chosen
+  deliberately, not assumed (see that phase's write-up).
+- **Phase 5 — Polish & Ship**: a consistency pass across every mobile screen, the portfolio
+  website (this repo's `apps/website`), and deploy preparation for both the backend and the
+  website (see `DEPLOYMENT.md`).
+
+Stack: React Native + Expo (mobile), Node.js + Express + Prisma + PostgreSQL (backend), Next.js
+(website), one shared TypeScript codebase throughout. Full technical rationale for every choice
+is in the phase write-ups below.
+
 ---
 
 ## Phase 0 — Project Setup
@@ -491,6 +515,102 @@ cursor pagination (3 pages across 5 posts, no repeats, correct end-of-list signa
 
 ---
 
+## Phase 5 — Polish & Ship
+
+Goal: three independent pieces of finishing work — a visual/UX consistency pass across the
+mobile app, a portfolio website, and getting both the backend and website ready to actually
+deploy. Unlike earlier phases, this one intentionally touches *existing, already-working*
+screens rather than adding new ones — so before any screen was edited, a full audit (every
+screen and shared component) was written up and shown to the project owner for confirmation,
+specifically to avoid breaking something that already worked. Two items surfaced in that audit
+were explicitly *not* actioned because they weren't confirmed: turning the still-placeholder
+Progress tab into a real screen, and unifying the app's mixed English/Italian text into one
+language (both flagged as bigger, separate scope than a visual polish pass — see the audit).
+
+### Mobile polish
+
+The audit found the design system itself (`colors.ts`/`typography.ts`/`shadows.ts`) was
+already used consistently everywhere — zero hardcoded colors anywhere outside the theme files.
+The real gaps were behavioral, not visual:
+
+- **A real bug, not just cosmetic**: several screens (`ExerciseDetailScreen`,
+  `SessionSummaryScreen`, `UserProfileScreen`, `PlanDetailScreen`, `ActiveSessionScreen`) had a
+  loading guard shaped like `if (loading || !data) return <Spinner/>` paired with a silently
+  swallowed fetch error (`.catch(() => {})`). On a failed request, `loading` becomes `false` but
+  `data` stays `null` — the spinner then spins forever, with no message and no way out. Fixed by
+  adding a shared `ErrorState` component (message + retry button, styled like everything else)
+  and routing every one of these screens' fetch failures into it instead of the dead end.
+- **22 other silent `.catch(() => {})`s** across list/feed screens (`HomeScreen`'s streak,
+  `WorkoutPlansListScreen`, `SocialFeedScreen`, `UserSearchScreen`) made a failed request look
+  identical to "legitimately empty." These now distinguish the two — an actual error message
+  instead of a misleadingly blank state — without going as far as a full-screen error for a
+  secondary widget like the home streak, where a small inline note is enough.
+- **Inconsistent tap feedback**: several screens still used raw React Native `Pressable`
+  instead of the app's own `PressableOpacity` wrapper (the one thing that makes every tap in
+  the app visually register). Swapped in `LoginScreen`, `RegisterScreen`, `PlanDetailScreen`,
+  `ProfileScreen`, `PlanExerciseEditorRow`, and `SetTableRow`'s set-complete button (which had
+  its own hand-rolled pressed-state instead, now unified).
+- **Haptic feedback** existed in exactly one place before this phase (the rest timer's
+  countdown). Added to the interactions the project owner specifically called out — completing
+  a set, saving a workout plan, finishing a workout — plus the same category of "important
+  interaction" elsewhere already in the app: sharing a workout, logging a meal, following a
+  user, and tapping a reaction.
+- **Small tap targets**: the exercise picker's Muscle/Equipment filter buttons and the rest
+  timer's preset duration chips were under the ~44pt guideline (as low as ~26px tall). Both
+  given an explicit minimum height. Color contrast was also checked against the requirement
+  (text vs. background across the palette) and found already acceptable — no changes needed
+  there.
+- Two small component bugs the audit caught: `PlanExerciseEditorRow`'s notes field had no
+  border/background (looked like static text, not an editable field), and `SetTableRow`'s
+  checkmark used a raw `fontWeight` instead of the app's font tokens.
+
+`npx tsc --noEmit` stayed clean across every one of these edits (21 files changed total). As
+with every earlier phase, no phone/simulator was available in this session to visually confirm
+the result — only that it type-checks and that the logic (e.g. the new error/retry paths)
+matches the intended behavior.
+
+### Portfolio website (`apps/website`)
+
+Replaced the untouched `create-next-app` scaffold with an actual single-page site: a hero
+(tagline + a CSS-recreated preview of the app's home screen — not a real screenshot, since none
+were taken in any session so far; built from the exact same color/spacing tokens as the mobile
+theme so it's an honest stand-in, not a mockup of something different), a features section
+grouped by phase, a tech-stack table, and a GitHub link, all reusing the mobile app's blue/black
+palette and Barlow/Barlow Condensed font pairing (loaded via `next/font/google`, same as the
+app) so the site and the product read as one brand. Metadata (title, description, Open Graph,
+Twitter card, `robots`) was added for basic SEO, and the layout is responsive via CSS Grid with
+a single breakpoint that stacks the hero on narrower screens.
+
+This version of Next.js (16.3.3) turned out to have real breaking changes from what the
+scaffold assumed (see `apps/website/AGENTS.md`, which points at the bundled docs) — most
+relevantly, `LayoutProps<'/'>` typed route helpers require running `next typegen` (or a build)
+at least once before `tsc` can resolve them, which isn't obvious from a cold checkout. Verified
+with a real production build (`npx next build`): compiles clean, and the homepage prerenders as
+fully static — meaning it needs no server, no environment variables, and no database to serve,
+consistent with what `DEPLOYMENT.md` documents for hosting it.
+
+### Deploy preparation
+
+Neither app was actually deployed in this session (no Railway/Render/Vercel account available
+here) — what's done is making both **ready** to deploy and documenting the exact steps in
+`DEPLOYMENT.md`, verified as far as this environment allows:
+
+- **Backend**: `package.json`'s `start` script now runs `prisma migrate deploy && node
+  dist/index.js`, so pending migrations are applied automatically before the server starts
+  accepting requests on every deploy — no manual migration step. A `postinstall` script runs
+  `prisma generate` so the Prisma Client is always regenerated after `npm install`. Both were
+  verified for real: a local `npm run build` followed by `npm run start` against the project's
+  real Postgres correctly reported `5 migrations found ... No pending migrations to apply`,
+  then served `GET /health` → `200 {"status":"ok"}`. `DEPLOYMENT.md` documents Railway and
+  Render setup (root directory, build/start commands, env vars); a `render.yaml` blueprint is
+  included as a starting point but wasn't deployed live to confirm against Render's current
+  schema — the manual dashboard steps are the verified fallback.
+- **Website**: needs no environment variables or database — confirmed by the production build
+  output itself (`○ /` — fully static). Vercel's own npm-workspaces monorepo support handles
+  this without extra config beyond pointing its Root Directory at `apps/website`.
+
+---
+
 ## How to run it
 
 ```bash
@@ -581,10 +701,18 @@ every request from the phone will silently time out.
 
 ## Not built yet
 
-These are excluded on purpose, either because they belong to a later phase or because the
-project owner explicitly scoped them out when Phase 4 was requested:
+All five planned phases are now implemented. What's left is deliberately excluded, either
+because the project owner scoped it out when the relevant phase was requested, or because it
+surfaced during Phase 5's polish audit and wasn't confirmed as in-scope:
 
 - Extended text comments on a WorkoutPost (only the fixed 4-emoji reactions exist)
 - Push notifications for new followers or reactions
 - Direct messaging between users
-- Phase 5 (Rifinitura e Portfolio) — public deploy, portfolio website, final UI polish
+- A real Progress tab (it's still a placeholder — the actual per-exercise progress chart lives
+  inside `ExerciseDetailScreen` instead; flagged in the Phase 5 audit, not actioned without
+  confirmation)
+- Unifying the app's mixed English/Italian screen text into one language (same reasoning —
+  flagged, not actioned)
+- Actually deploying the backend and website (Phase 5 made both deploy-ready and documented the
+  exact steps in `DEPLOYMENT.md`, but didn't deploy live — no hosting account available in any
+  session so far)

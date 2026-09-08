@@ -1,0 +1,25 @@
+# Render Blueprint for the backend — see DEPLOYMENT.md for the full guide
+# and for Railway's equivalent (dashboard-only, no blueprint file needed).
+# This is a starting point: import it at https://dashboard.render.com/blueprints
+# and fill in the JWT_SECRET value it will prompt for (marked sync: false).
+services:
+  - type: web
+    name: traktion-backend
+    runtime: node
+    rootDir: apps/backend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: traktion-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+
+databases:
+  - name: traktion-db
+    databaseName: traktion
+    plan: free

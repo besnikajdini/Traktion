@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Exercise, ExerciseProgressPoint, PersonalRecord, SetLogWithSession } from '@traktion/shared-types';
@@ -11,6 +11,7 @@ import {
 import { ExerciseMedia } from '../components/ExerciseMedia';
 import { LineChart } from '../components/LineChart';
 import { PressableOpacity } from '../components/PressableOpacity';
+import { ErrorState } from '../components/ErrorState';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme/shadows';
 import { typography } from '../theme/typography';
@@ -30,38 +31,43 @@ export function ExerciseDetailScreen({ route, navigation }: Props) {
   const [history, setHistory] = useState<SetLogWithSession[]>([]);
   const [bests, setBests] = useState<PersonalRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
+    return Promise.all([
       getExercise(exerciseId),
       getExerciseProgress(exerciseId),
       getExerciseHistory(exerciseId),
       getExercisePersonalBests(exerciseId),
     ])
       .then(([ex, prog, hist, pb]) => {
-        if (cancelled) return;
         setExercise(ex);
         setProgress(prog);
         setHistory(hist);
         setBests(pb);
         navigation.setOptions({ title: ex.name });
       })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, [exerciseId, navigation]);
 
-  if (loading || !exercise) {
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exerciseId]);
+
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
+  }
+
+  if (error || !exercise) {
+    return <ErrorState message="Could not load this exercise." retryLabel="Try again" onRetry={load} />;
   }
 
   const maxWeightPR = bests.find((b) => b.type === 'MAX_WEIGHT');

@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { WorkoutPlanDetail } from '@traktion/shared-types';
 import { deleteWorkoutPlan, getWorkoutPlan } from '../services/workoutPlans';
 import { startSession } from '../services/workoutSessions';
 import { useSessionStore } from '../store/sessionStore';
+import { PressableOpacity } from '../components/PressableOpacity';
+import { ErrorState } from '../components/ErrorState';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import type { WorkoutsStackParamList } from '../navigation/types';
@@ -16,25 +18,23 @@ export function PlanDetailScreen({ navigation, route }: Props) {
   const { planId } = route.params;
   const [plan, setPlan] = useState<WorkoutPlanDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [starting, setStarting] = useState(false);
   const setSession = useSessionStore((s) => s.setSession);
 
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
+    return getWorkoutPlan(planId)
+      .then((result) => setPlan(result))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [planId]);
+
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
-      setLoading(true);
-      getWorkoutPlan(planId)
-        .then((result) => {
-          if (!cancelled) setPlan(result);
-        })
-        .catch(() => Alert.alert('Error', 'Could not load this plan.'))
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-      return () => {
-        cancelled = true;
-      };
-    }, [planId]),
+      load();
+    }, [load]),
   );
 
   const handleStart = async () => {
@@ -68,12 +68,16 @@ export function PlanDetailScreen({ navigation, route }: Props) {
     ]);
   };
 
-  if (loading || !plan) {
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
+  }
+
+  if (error || !plan) {
+    return <ErrorState message="Could not load this plan." retryLabel="Try again" onRetry={load} />;
   }
 
   return (
@@ -83,7 +87,7 @@ export function PlanDetailScreen({ navigation, route }: Props) {
 
       <View style={styles.list}>
         {plan.planExercises.map((pe) => (
-          <Pressable
+          <PressableOpacity
             key={pe.id}
             style={styles.exerciseCard}
             onPress={() => navigation.navigate('ExerciseDetail', { exerciseId: pe.exerciseId })}
@@ -96,21 +100,21 @@ export function PlanDetailScreen({ navigation, route }: Props) {
                 {pe.restSeconds ?? 0}s
               </Text>
             </View>
-          </Pressable>
+          </PressableOpacity>
         ))}
       </View>
 
-      <Pressable style={styles.startButton} onPress={handleStart} disabled={starting}>
+      <PressableOpacity style={styles.startButton} onPress={handleStart} disabled={starting}>
         {starting ? <ActivityIndicator color={colors.text} /> : <Text style={styles.startText}>Start workout</Text>}
-      </Pressable>
+      </PressableOpacity>
 
       <View style={styles.secondaryActions}>
-        <Pressable onPress={() => navigation.navigate('PlanBuilder', { planId })}>
+        <PressableOpacity onPress={() => navigation.navigate('PlanBuilder', { planId })} hitSlop={8}>
           <Text style={styles.secondaryText}>Edit</Text>
-        </Pressable>
-        <Pressable onPress={handleDelete}>
+        </PressableOpacity>
+        <PressableOpacity onPress={handleDelete} hitSlop={8}>
           <Text style={[styles.secondaryText, styles.deleteText]}>Delete</Text>
-        </Pressable>
+        </PressableOpacity>
       </View>
     </ScrollView>
   );

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuthStore } from '../store/authStore';
 import { PressableOpacity } from '../components/PressableOpacity';
@@ -26,9 +26,9 @@ export function ProfileScreen({ navigation }: Props) {
         <Text style={styles.menuChevron}>›</Text>
       </PressableOpacity>
 
-      <Pressable style={styles.logoutButton} onPress={() => logout()}>
+      <PressableOpacity style={styles.logoutButton} onPress={() => logout()}>
         <Text style={styles.logoutText}>Log out</Text>
-      </Pressable>
+      </PressableOpacity>
     </View>
   );
 }

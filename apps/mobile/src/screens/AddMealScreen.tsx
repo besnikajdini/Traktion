@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { FavoriteMeal, FoodEntry, MealType } from '@traktion/shared-types';
 import { createFoodEntry } from '../services/foodEntries';
@@ -47,6 +48,7 @@ export function AddMealScreen({ navigation }: Props) {
     setSaving(true);
     try {
       const entry = await createFoodEntry({ mealType, description: description.trim() });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(entry);
       setFavoriteSaved(false);
     } catch (err) {

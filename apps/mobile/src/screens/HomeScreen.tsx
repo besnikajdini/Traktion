@@ -16,15 +16,19 @@ export function HomeScreen() {
   const user = useAuthStore((s) => s.user);
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
   const [streak, setStreak] = useState<StreakSummary | null>(null);
+  const [streakError, setStreakError] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
+      setStreakError(false);
       getStreak()
         .then((s) => {
           if (!cancelled) setStreak(s);
         })
-        .catch(() => {});
+        .catch(() => {
+          if (!cancelled) setStreakError(true);
+        });
       return () => {
         cancelled = true;
       };
@@ -41,8 +45,11 @@ export function HomeScreen() {
         </View>
         <Text style={styles.streakNumber}>{streak?.currentStreak ?? '—'}</Text>
         <Text style={styles.streakLabel}>
-          week{streak?.currentStreak === 1 ? '' : 's'} streak
-          {streak && streak.longestStreak > streak.currentStreak ? ` · best: ${streak.longestStreak}` : ''}
+          {streakError
+            ? "Couldn't load your streak"
+            : `week${streak?.currentStreak === 1 ? '' : 's'} streak${
+                streak && streak.longestStreak > streak.currentStreak ? ` · best: ${streak.longestStreak}` : ''
+              }`}
         </Text>
       </View>
 

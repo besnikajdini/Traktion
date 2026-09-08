@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { UserSearchResult } from '@traktion/shared-types';
 import { followUser, searchUsers, unfollowUser } from '../services/social';
@@ -16,6 +17,7 @@ export function UserSearchScreen({ navigation }: Props) {
   const [results, setResults] = useState<UserSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState(false);
 
   const runSearch = (text: string) => {
     setQuery(text);
@@ -23,19 +25,22 @@ export function UserSearchScreen({ navigation }: Props) {
     if (trimmed.length === 0) {
       setResults([]);
       setSearched(false);
+      setError(false);
       return;
     }
     setLoading(true);
+    setError(false);
     searchUsers(trimmed)
       .then((r) => {
         setResults(r);
         setSearched(true);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   };
 
   const toggleFollow = (user: UserSearchResult) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const action = user.isFollowing ? unfollowUser(user.id) : followUser(user.id);
     setResults((prev) => prev.map((u) => (u.id === user.id ? { ...u, isFollowing: !u.isFollowing } : u)));
     action.catch(() => {
@@ -64,7 +69,11 @@ export function UserSearchScreen({ navigation }: Props) {
           data={results}
           keyExtractor={(u) => u.id}
           ListEmptyComponent={
-            searched ? <Text style={styles.emptyText}>Nessun utente trovato.</Text> : null
+            error ? (
+              <Text style={styles.emptyText}>Ricerca non riuscita. Riprova.</Text>
+            ) : searched ? (
+              <Text style={styles.emptyText}>Nessun utente trovato.</Text>
+            ) : null
           }
           renderItem={({ item }) => (
             <PressableOpacity style={styles.row} onPress={() => navigation.navigate('UserProfile', { userId: item.id })}>

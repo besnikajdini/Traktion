@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { ReactionType, WorkoutPost } from '@traktion/shared-types';
 import { getFeed, reactToPost } from '../services/social';
 import { WorkoutPostCard } from '../components/WorkoutPostCard';
+import { ErrorState } from '../components/ErrorState';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 
@@ -12,15 +13,17 @@ export function SocialFeedScreen() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
+    setError(false);
     return getFeed()
       .then((page) => {
         setPosts(page.items);
         setNextCursor(page.nextCursor);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -54,6 +57,10 @@ export function SocialFeedScreen() {
         <ActivityIndicator color={colors.primary} />
       </View>
     );
+  }
+
+  if (error && posts.length === 0) {
+    return <ErrorState message="Non è stato possibile caricare il feed." retryLabel="Riprova" onRetry={load} />;
   }
 
   return (

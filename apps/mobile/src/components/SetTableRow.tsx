@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import type { SetLog } from '@traktion/shared-types';
+import { PressableOpacity } from './PressableOpacity';
 import { colors } from '../theme/colors';
 import { fontFamily, typography } from '../theme/typography';
 
@@ -19,12 +21,14 @@ export function SetTableRow({ setNumber, completedLog, lastSetLog, onComplete, o
 
   const handlePress = () => {
     if (isCompleted) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onUndo();
       return;
     }
     const weightNum = Number.parseFloat(weight.replace(',', '.'));
     const repsNum = Number.parseInt(reps, 10);
     if (Number.isNaN(weightNum) || Number.isNaN(repsNum) || weightNum < 0 || repsNum <= 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onComplete(weightNum, repsNum);
   };
 
@@ -52,9 +56,9 @@ export function SetTableRow({ setNumber, completedLog, lastSetLog, onComplete, o
         onChangeText={setReps}
         editable={!isCompleted}
       />
-      <Pressable style={({ pressed }) => [styles.check, isCompleted && styles.checkDone, pressed && styles.checkPressed]} onPress={handlePress}>
+      <PressableOpacity style={[styles.check, isCompleted && styles.checkDone]} onPress={handlePress}>
         <Text style={styles.checkText}>{isCompleted ? '✓' : ''}</Text>
-      </Pressable>
+      </PressableOpacity>
     </View>
   );
 }
@@ -120,11 +124,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
     borderColor: colors.success,
   },
-  checkPressed: {
-    opacity: 0.7,
-  },
   checkText: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 16,
     color: colors.background,
-    fontWeight: '700',
   },
 });

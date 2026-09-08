@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PersonalRecordWithExercise, WorkoutSessionDetail } from '@traktion/shared-types';
 import { getSession, getSessionPersonalRecords } from '../services/workoutSessions';
 import { PressableOpacity } from '../components/PressableOpacity';
+import { ErrorState } from '../components/ErrorState';
 import { useAuthStore } from '../store/authStore';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme/shadows';
@@ -17,31 +18,35 @@ export function SessionSummaryScreen({ navigation, route }: Props) {
   const [session, setSession] = useState<WorkoutSessionDetail | null>(null);
   const [records, setRecords] = useState<PersonalRecordWithExercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const autoShareWorkouts = useAuthStore((s) => s.user?.autoShareWorkouts ?? false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
     Promise.all([getSession(sessionId), getSessionPersonalRecords(sessionId)])
       .then(([s, r]) => {
-        if (cancelled) return;
         setSession(s);
         setRecords(r);
       })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, [sessionId]);
 
-  if (loading || !session) {
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
+  }
+
+  if (error || !session) {
+    return <ErrorState message="Could not load your workout summary." retryLabel="Try again" onRetry={load} />;
   }
 
   const durationMs = session.endedAt ? new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime() : 0;

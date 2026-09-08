@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { shareWorkout } from '../services/social';
 import { uploadWorkoutPhoto } from '../services/cloudinary';
@@ -43,6 +44,7 @@ export function ShareWorkoutScreen({ navigation, route }: Props) {
         photoUrl = await uploadWorkoutPhoto(photoUri);
       }
       await shareWorkout({ workoutSessionId: sessionId, photoUrl });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.popToTop();
     } catch (err) {
       Alert.alert('Errore', err instanceof Error ? err.message : 'Non è stato possibile condividere questo allenamento.');

@@ -4,12 +4,14 @@
 // DEVELOPMENT_LOG.md).
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PublicUserProfile, ReactionType, WorkoutPost } from '@traktion/shared-types';
 import { deleteWorkoutPost, followUser, getUserProfile, getUserWorkoutPosts, reactToPost, unfollowUser } from '../services/social';
 import { WorkoutPostCard } from '../components/WorkoutPostCard';
 import { PressableOpacity } from '../components/PressableOpacity';
+import { ErrorState } from '../components/ErrorState';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme/shadows';
 import { typography } from '../theme/typography';
@@ -23,17 +25,19 @@ export function UserProfileScreen({ route }: Props) {
   const [posts, setPosts] = useState<WorkoutPost[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
+    setError(false);
     return Promise.all([getUserProfile(userId), getUserWorkoutPosts(userId)])
       .then(([p, page]) => {
         setProfile(p);
         setPosts(page.items);
         setNextCursor(page.nextCursor);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [userId]);
 
@@ -55,6 +59,7 @@ export function UserProfileScreen({ route }: Props) {
 
   const toggleFollow = () => {
     if (!profile || followBusy) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFollowBusy(true);
     const action = profile.isFollowing ? unfollowUser(profile.id) : followUser(profile.id);
     action
@@ -88,12 +93,16 @@ export function UserProfileScreen({ route }: Props) {
     ]);
   };
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
+  }
+
+  if (error || !profile) {
+    return <ErrorState message="Non è stato possibile caricare questo profilo." retryLabel="Riprova" onRetry={load} />;
   }
 
   return (

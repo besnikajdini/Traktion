@@ -3,6 +3,7 @@
 // no separate screen (tapping the active one again removes it, tapping a
 // different one switches — see workoutPosts.service.ts's setReaction).
 import { Image, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import type { ReactionType, WorkoutPost } from '@traktion/shared-types';
 import { PressableOpacity } from './PressableOpacity';
 import { colors } from '../theme/colors';
@@ -83,7 +84,10 @@ export function WorkoutPostCard({ post, onReact, onDelete }: Props) {
             <PressableOpacity
               key={r.type}
               style={[styles.reactionButton, active && styles.reactionButtonActive]}
-              onPress={() => onReact(r.type)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onReact(r.type);
+              }}
             >
               <Text style={styles.reactionEmoji}>{r.emoji}</Text>
               {count > 0 && <Text style={[styles.reactionCount, active && styles.reactionCountActive]}>{count}</Text>}

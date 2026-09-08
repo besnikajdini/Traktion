@@ -17,3 +17,6 @@ This project was built as a personal deep-dive into full-stack mobile developmen
 - **Backend:** Node.js + Express + TypeScript
 - **Database:** PostgreSQL + Prisma ORM
 - **Website:** Next.js
+
+See `DEVELOPMENT_LOG.md` for the full build write-up (phase by phase, including the decisions
+and dead ends), and `DEPLOYMENT.md` for how the backend and website are set up to deploy.

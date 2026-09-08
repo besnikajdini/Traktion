@@ -9,6 +9,9 @@
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev:mobile": "npm run start --workspace=apps/mobile",
     "dev:website": "npm run dev --workspace=apps/website",
-    "build:shared-types": "npm run build --workspace=packages/shared-types"
+    "build:shared-types": "npm run build --workspace=packages/shared-types",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "start:backend": "npm run start --workspace=apps/backend",
+    "build:website": "npm run build --workspace=apps/website"
   }
 }

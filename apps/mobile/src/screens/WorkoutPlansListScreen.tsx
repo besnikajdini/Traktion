@@ -7,6 +7,7 @@ import { listWorkoutPlans } from '../services/workoutPlans';
 import { getActiveSession } from '../services/workoutSessions';
 import { useSessionStore } from '../store/sessionStore';
 import { PressableOpacity } from '../components/PressableOpacity';
+import { ErrorState } from '../components/ErrorState';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme/shadows';
 import { typography } from '../theme/typography';
@@ -18,27 +19,30 @@ export function WorkoutPlansListScreen({ navigation }: Props) {
   const [plans, setPlans] = useState<WorkoutPlanSummary[]>([]);
   const [activeSession, setActiveSession] = useState<WorkoutSessionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const setSession = useSessionStore((s) => s.setSession);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
+    return Promise.all([listWorkoutPlans(), getActiveSession()])
+      .then(([plansResult, activeResult]) => {
+        setPlans(plansResult);
+        setActiveSession(activeResult);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
-      setLoading(true);
-      Promise.all([listWorkoutPlans(), getActiveSession()])
-        .then(([plansResult, activeResult]) => {
-          if (cancelled) return;
-          setPlans(plansResult);
-          setActiveSession(activeResult);
-        })
-        .catch(() => {})
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-      return () => {
-        cancelled = true;
-      };
-    }, []),
+      load();
+    }, [load]),
   );
+
+  if (error && plans.length === 0 && !loading) {
+    return <ErrorState message="Could not load your workout plans." retryLabel="Try again" onRetry={load} />;
+  }
 
   return (
     <View style={styles.container}>
@@ -60,13 +64,7 @@ export function WorkoutPlansListScreen({ navigation }: Props) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshing={loading}
-        onRefresh={() => {
-          setLoading(true);
-          listWorkoutPlans()
-            .then(setPlans)
-            .catch(() => {})
-            .finally(() => setLoading(false));
-        }}
+        onRefresh={load}
         ListEmptyComponent={
           !loading ? (
             <Text style={styles.emptyText}>No workout plans yet. Create your first one.</Text>

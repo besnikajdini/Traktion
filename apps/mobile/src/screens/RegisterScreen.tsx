@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuthStore } from '../store/authStore';
+import { PressableOpacity } from '../components/PressableOpacity';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import type { RootStackParamList } from '../navigation/types';
@@ -68,13 +69,13 @@ export function RegisterScreen({ navigation }: Props) {
         onChangeText={setPassword}
       />
 
-      <Pressable style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
+      <PressableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
         {submitting ? <ActivityIndicator color={colors.text} /> : <Text style={styles.submitText}>Register</Text>}
-      </Pressable>
+      </PressableOpacity>
 
-      <Pressable onPress={() => navigation.navigate('Login')}>
+      <PressableOpacity onPress={() => navigation.navigate('Login')} hitSlop={8}>
         <Text style={styles.link}>Already have an account? Log in</Text>
-      </Pressable>
+      </PressableOpacity>
     </KeyboardAvoidingView>
   );
 }
